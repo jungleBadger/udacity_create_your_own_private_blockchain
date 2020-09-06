@@ -36,8 +36,11 @@ class Blockchain {
     async initializeChain() {
         if( this.height === -1){
             let block = new BlockClass.Block({data: 'Genesis Block'});
-
-            await this._addBlock(block);
+            try {
+                await this._addBlock(block);
+            } catch (e) {
+                console.log(e);
+            }
         }
     }
 
@@ -64,20 +67,24 @@ class Blockchain {
      */
     _addBlock(block) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-            if (self.chain && self.chain.length) {
-                block.previousBlockHash = self.chain[self.chain.length - 1].generateHash();
-                block.height = self.chain.length;
-            } else {
-                block.previousBlockHash = null;
-                block.height = 0;
+        return new Promise((resolve, reject) => {
+            try {
+                if (self.chain && self.chain.length) {
+                    block.previousBlockHash = self.chain[self.chain.length - 1].generateHash();
+                    block.height = self.chain.length;
+                } else {
+                    block.previousBlockHash = null;
+                    block.height = 0;
+                }
+
+                block.hash = block.generateHash();
+
+                self.chain.push(block);
+                this.height = block.height;
+                resolve(block);
+            } catch (e) {
+                reject(e);
             }
-
-            block.hash = block.generateHash();
-
-            self.chain.push(block);
-            this.height = block.height;
-            resolve(block);
         });
     }
 
@@ -125,25 +132,29 @@ class Blockchain {
             ) {
                 reject("Message signature expired");
             } else {
-                if (
-                    bitcoinMessage.verify(
-                        message, address, signature
-                    )
-                ) {
-                    let block = new BlockClass.Block(
-                        {
-                            "owner": address,
-                            "star": star
-                        }
-                    );
-                    self._addBlock(
-                        block
-                    ).then(
-                        newBlock => resolve (newBlock)
-                    ).catch(err => reject(err));
-                } else {
-                    reject("Invalid message signature");
+                try {
+                    if (
+                        bitcoinMessage.verify(
+                            message, address, signature
+                        )
+                    ) {
+                        let block = new BlockClass.Block(
+                            {
+                                "owner": address,
+                                "star": star
+                            }
+                        );
+                        self._addBlock(
+                            block
+                        ).then(newBlock => resolve(newBlock)
+                        ).catch(err => reject(err));
+                    } else {
+                        reject("Invalid message signature");
+                    }
+                } catch (e) {
+                    reject(e);
                 }
+
             }
         });
     }
@@ -217,31 +228,35 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            for (let i = 0; i < self.chain.length; i += 1) {
-                let status = await self.chain[i].validate();
-                if (!status) {
-                    errorLog.push({
-                        "error": "Invalid block signature",
-                        "block": self.chain[i]
-                    });
+            try {
+                for (let i = 0; i < self.chain.length; i += 1) {
+                    let status = await self.chain[i].validate();
+                    if (!status) {
+                        errorLog.push({
+                            "error": "Invalid block signature",
+                            "block": self.chain[i]
+                        });
+                    }
+
+                    //Compare hash of previous block with current block `previousBlockHash` value
+                    if (
+                        self.chain[i].height > 0 &&
+                        (self.chain[i - 1].generateHash() !== self.chain[i].previousBlockHash)
+                    ) {
+                        errorLog.push({
+                            "error": "Invalid previous block signature",
+                            "block": self.chain[i]
+                        });
+                    }
                 }
 
-                //Compare hash of previous block with current block `previousBlockHash` value
-                if (
-                    self.chain[i].height > 0 &&
-                    (self.chain[i - 1].generateHash() !== self.chain[i].previousBlockHash)
-                ) {
-                    errorLog.push({
-                        "error": "Invalid previous block signature",
-                        "block": self.chain[i]
-                    });
-                }
+                resolve(errorLog);
+            } catch (e) {
+                reject(e);
             }
 
-            resolve(errorLog);
         });
     }
-
 }
 
 module.exports.Blockchain = Blockchain;   
