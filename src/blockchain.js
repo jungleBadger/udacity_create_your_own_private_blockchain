@@ -12,7 +12,6 @@ const SHA256 = require('crypto-js/sha256');
 const BlockClass = require('./block.js');
 const bitcoinMessage = require('bitcoinjs-message');
 const VALIDATION_TIMEOUT = 5 * 60; // 5 minutes
-console.log(bitcoinMessage)
 class Blockchain {
 
     /**
