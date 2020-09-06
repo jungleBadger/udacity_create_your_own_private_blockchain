@@ -236,11 +236,14 @@ class Blockchain {
                             "error": "Invalid block signature",
                             "block": self.chain[i]
                         });
-                    }
-
-                    //Compare hash of previous block with current block `previousBlockHash` value
-                    if (
-                        self.chain[i].height > 0 && self.chain[i - 1] &&
+                    } else if (self.chain[i].previousBlockHash && (!self.chain[i - 1] || !self.chain[i - 1].generateHash)) {
+                        errorLog.push({
+                            "error": "Inconsistent chain heights.",
+                            "block": self.chain[i]
+                        });
+                    } else if (
+                        //Compare hash of previous block with current block `previousBlockHash` value
+                        self.chain[i].height > 0 &&
                         (self.chain[i - 1].generateHash() !== self.chain[i].previousBlockHash)
                     ) {
                         errorLog.push({
