@@ -226,7 +226,11 @@ class Blockchain {
                     });
                 }
 
-                if (self.chain[i].height > 0 && self.chain[i - 1].generateHash !== self.chain[i].previousBlockHash) {
+                //Compare hash of previous block with current block `previousBlockHash` value
+                if (
+                    self.chain[i].height > 0 &&
+                    (self.chain[i - 1].generateHash() !== self.chain[i].previousBlockHash)
+                ) {
                     errorLog.push({
                         "error": "Invalid previous block signature",
                         "block": self.chain[i]
