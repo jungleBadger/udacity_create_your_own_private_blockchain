@@ -19,7 +19,7 @@ class Block {
 		this.hash = null;                                           // Hash of the block
 		this.height = 0;                                            // Block Height (consecutive number of each block)
 		this.body = Buffer(JSON.stringify(data)).toString('hex');   // Will contain the transactions stored in the block, by default it will encode the data
-		this.time = 0;                                              // Timestamp for the Block creation
+		this.time = new Date().getTime().toString().slice(0, -3);                                              // Timestamp for the Block creation
 		this.previousBlockHash = null;                              // Reference to the previous Block Hash
     }
     
@@ -37,15 +37,10 @@ class Block {
      */
     validate() {
         let self = this;
+        let currentHash = self.hash;
         return new Promise((resolve, reject) => {
-            // Save in auxiliary variable the current block hash
-                                            
-            // Recalculate the hash of the Block
-            // Comparing if the hashes changed
-            // Returning the Block is not valid
-            
-            // Returning the Block is valid
-
+	        let hash = self.generateHash();
+	        return currentHash === hash ? resolve(true) : resolve(false);
         });
     }
 
@@ -59,13 +54,34 @@ class Block {
      *     or Reject with an error.
      */
     getBData() {
-        // Getting the encoded data saved in the Block
-        // Decoding the data to retrieve the JSON representation of the object
-        // Parse the data to an object to be retrieve.
-
-        // Resolve with the data if the object isn't the Genesis block
+    	let self = this;
+    	try {
+		    let block = JSON.parse(hex2ascii(self.body));
+		    return JSON.parse(
+		    	JSON.stringify(
+				    block.height === 0 ?
+					    {
+						    ...block,
+						    "data": undefined,
+						    "previousBlockHash": undefined
+					    } :
+					    block
+			    )
+	        );
+	    } catch (e) {
+    		return null;
+	    }
 
     }
+
+	generateHash() {
+		return SHA256(JSON.stringify({
+			...this,
+			...{
+				"hash": undefined
+			}
+		})).toString()
+	}
 
 }
 
